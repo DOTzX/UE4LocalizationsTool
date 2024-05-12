@@ -258,7 +258,8 @@ namespace AssetParser {
     public class ReadStringProperty {
         public ReadStringProperty(MemoryList memoryList, Uexp uexp, string PropertyName, bool Modify = false) {
             if (!Modify) {
-                string getStringProp = memoryList.GetStringUE();
+                string _getStringProp = memoryList.GetStringUE();
+                string getStringProp = _getStringProp;
                 // string _PropertyName = PropertyName.Substring(0, PropertyName.LastIndexOf('_'));
                 if (PropertyName.EndsWith("_3") && uexp.UassetData.UseWithLocRes) {
                     string Name = uexp.Strings[uexp.Strings.Count - 2][1];
@@ -271,6 +272,8 @@ namespace AssetParser {
                     }
                     uexp.LocalizedStrings.TryGetValue(_Key, out getStringProp);
                 }
+
+                if (string.IsNullOrEmpty(getStringProp)) getStringProp = _getStringProp;
                 uexp.Strings.Add(new List<string>() { PropertyName, getStringProp });
                 ConsoleMode.Print(uexp.Strings[uexp.Strings.Count - 1][1], ConsoleColor.Magenta);
             } else {
