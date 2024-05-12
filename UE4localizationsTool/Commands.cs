@@ -7,22 +7,21 @@ using System.Text.RegularExpressions;
 using UE4localizationsTool.Core.locres;
 using UE4localizationsTool.Helper;
 
-namespace UE4localizationsTool
-{
+namespace UE4localizationsTool {
     [Flags]
-    public enum Args
-    {
+    public enum Args {
         filter = 1 << 0,
         noname = 1 << 1,
         method2 = 1 << 2,
         CSV = 1 << 3,
+        LOCRES = 1 << 4,
     }
 
 
 
-    public class Commands
-    {
+    public class Commands {
         private List<List<string>> Strings;
+        private Dictionary<string, string> LocalizedStrings;
         private string TextFileExtension = ".txt";
         public Args Flags;
 
@@ -30,35 +29,49 @@ namespace UE4localizationsTool
         private bool RegularExpression = false;
         private bool ReverseMode = false;
         private List<string> ArrayValues;
-        public Commands(string Options, string SourcePath, Args args)
-        {
+        public Commands(string Options, string SourcePath, Args args) {
             Flags = args;
-            if (Flags.HasFlag(Args.filter))
-            {
+            if (Flags.HasFlag(Args.filter)) {
                 GetFilterValues();
             }
 
-            if (Flags.HasFlag(Args.CSV))
-            {
+            if (Flags.HasFlag(Args.CSV)) {
 
                 TextFileExtension = ".csv";
             }
             string[] Paths;
             string ConsoleText;
             string[] rows;
-            switch (Options.ToLower())
-            {
+            switch (Options.ToLower()) {
                 case "export"://Single File
                     Strings = new List<List<string>>();
+                    LocalizedStrings = new Dictionary<string, string>();
+
                     Console.ForegroundColor = ConsoleColor.Blue;
+
+                    if (Flags.HasFlag(Args.LOCRES)) {
+                        ConsoleText = $"Loading... 'Game.locres' ";
+                        Console.Write(ConsoleText);
+
+                        if (!File.Exists("Game.locres")) {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            ConsoleText = $"Not found\n";
+                            Console.Write(ConsoleText);
+                            Console.ForegroundColor = ConsoleColor.Blue;
+                        } else {
+                            LocalizedStrings = ExportLocRes("Game.locres");
+                            ConsoleText = $"Done\n";
+                            Console.Write(ConsoleText);
+                        }
+                    }
+
                     ConsoleText = $"Exporting... '{Path.GetFileName(SourcePath)}' ";
                     Console.Write(ConsoleText);
                     Console.ForegroundColor = ConsoleColor.White;
 
-                    Strings = Export(SourcePath);
+                    Strings = Export(SourcePath, true);
 
-                    if (Flags.HasFlag(Args.filter))
-                    {
+                    if (Flags.HasFlag(Args.filter)) {
                         Strings = ApplyFilter(Strings);
                     }
 
@@ -67,13 +80,32 @@ namespace UE4localizationsTool
                     Console.ForegroundColor = ConsoleColor.White;
 
                     SaveTextFile(SourcePath + TextFileExtension);
-
-
                     break;
+
                 case "exportall"://Folders
                     Strings = new List<List<string>>();
+                    LocalizedStrings = new Dictionary<string, string>();
+
+                    Console.ForegroundColor = ConsoleColor.Blue;
+
+                    if (Flags.HasFlag(Args.LOCRES)) {
+                        ConsoleText = $"Loading... 'Game.locres' ";
+                        Console.Write(ConsoleText);
+
+                        if (!File.Exists("Game.locres")) {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            ConsoleText = $"Not found\n";
+                            Console.Write(ConsoleText);
+                            Console.ForegroundColor = ConsoleColor.Blue;
+                        } else {
+                            LocalizedStrings = ExportLocRes("Game.locres");
+                            ConsoleText = $"Done\n";
+                            Console.Write(ConsoleText);
+                        }
+                    }
+
                     Paths = SourcePath.Split(new char[] { '*' }, 2);
-                    ExportFolder(Paths[0]);
+                    ExportFolder(Paths[0], true);
                     SaveTextFile(Paths[1]);
                     break;
 
@@ -84,19 +116,13 @@ namespace UE4localizationsTool
                     Console.Write(ConsoleText);
                     Console.ForegroundColor = ConsoleColor.White;
 
-                    if (!SourcePath.EndsWith(TextFileExtension, StringComparison.OrdinalIgnoreCase))
-                    {
+                    if (!SourcePath.EndsWith(TextFileExtension, StringComparison.OrdinalIgnoreCase)) {
                         throw new Exception("Invalid text file type: " + Path.GetFileName(SourcePath));
                     }
 
-
-
-                    if (Flags.HasFlag(Args.CSV))
-                    {
+                    if (Flags.HasFlag(Args.CSV)) {
                         rows = CSVFile.Instance.Load(SourcePath, Flags.HasFlag(Args.noname));
-                    }
-                    else
-                    {
+                    } else {
                         rows = File.ReadAllLines(SourcePath);
                     }
 
@@ -104,33 +130,25 @@ namespace UE4localizationsTool
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.Write("Done\n");
                     Console.ForegroundColor = ConsoleColor.White;
-
-
                     break;
 
                 case "importall"://Folders
                 case "-importall"://Folders Without rename Files
                     Paths = SourcePath.Split(new char[] { '*' }, 2);
 
-                    if (!Paths[1].EndsWith(TextFileExtension, StringComparison.OrdinalIgnoreCase))
-                    {
+                    if (!Paths[1].EndsWith(TextFileExtension, StringComparison.OrdinalIgnoreCase)) {
                         throw new Exception("Invalid text file type: " + Path.GetFileName(SourcePath));
                     }
 
-
-
-                    if (Flags.HasFlag(Args.CSV))
-                    {
+                    if (Flags.HasFlag(Args.CSV)) {
                         rows = CSVFile.Instance.Load(Paths[1], Flags.HasFlag(Args.noname));
-                    }
-                    else
-                    {
+                    } else {
                         rows = File.ReadAllLines(Paths[1]);
                     }
 
-
                     ImportFolder(Paths[0], rows, Options.ToLower());
                     break;
+
                 default:
                     throw new Exception("Invalid number of arguments.\n" + Program.commandlines);
             }
@@ -138,16 +156,14 @@ namespace UE4localizationsTool
         }
 
 
-        private void SaveTextFile(string FilePath)
-        {
+        private void SaveTextFile(string FilePath) {
             Console.ForegroundColor = ConsoleColor.Blue;
             string ConsoleText = "Saving text file... ";
             Console.Write(ConsoleText);
             Console.ForegroundColor = ConsoleColor.White;
 
 
-            if (Flags.HasFlag(Args.CSV))
-            {
+            if (Flags.HasFlag(Args.CSV)) {
                 CSVFile.Instance.Save(Strings, FilePath, Flags.HasFlag(Args.noname));
 
                 goto End;
@@ -156,20 +172,13 @@ namespace UE4localizationsTool
             string[] stringsArray = new string[Strings.Count];
             int i = 0;
 
-            foreach (var item in Strings)
-            {
-                if (item[0] == "[~PATHFile~]")
-                {
+            foreach (var item in Strings) {
+                if (item[0] == "[~PATHFile~]") {
                     stringsArray[i] = item[1];
-                }
-                else
-                {
-                    if (!Flags.HasFlag(Args.noname))
-                    {
+                } else {
+                    if (!Flags.HasFlag(Args.noname)) {
                         stringsArray[i] = item[0] + "=" + item[1];
-                    }
-                    else
-                    {
+                    } else {
                         stringsArray[i] = item[1];
                     }
                 }
@@ -183,44 +192,56 @@ namespace UE4localizationsTool
         }
 
 
-        private List<List<string>> Export(string FilePath)
-        {
-            if (!File.Exists(FilePath))
-            {
+        private Dictionary<string, string> ExportLocRes(string FilePath) {
+            if (!File.Exists(FilePath)) {
                 throw new Exception("File not existed: " + FilePath);
             }
 
+            if (FilePath.EndsWith(".locres", StringComparison.OrdinalIgnoreCase)) {
+                IAsset locres = new LocresFile(FilePath);
+                return locres.ExtractDatas();
+            } else {
+                throw new Exception("Invalid language file type: " + Path.GetFileName(FilePath));
+            }
+        }
 
-            if (FilePath.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
-            {
+        private List<List<string>> Export(string FilePath, bool useLocRes = false) {
+            if (!File.Exists(FilePath)) {
+                throw new Exception("File not existed: " + FilePath);
+            }
+
+            if (FilePath.EndsWith(".locres", StringComparison.OrdinalIgnoreCase)) {
                 IAsset locres = new LocresFile(FilePath);
                 return locres.ExtractTexts();
                 //  SizeOfRecord = locres.Strings.Count;
-            }
-            else if (FilePath.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase) || FilePath.EndsWith(".umap", StringComparison.OrdinalIgnoreCase))
-            {
+            } else if (FilePath.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase) || FilePath.EndsWith(".umap", StringComparison.OrdinalIgnoreCase)) {
                 IUasset Uasset = Uexp.GetUasset(FilePath);
 
-                if (Flags.HasFlag(Args.method2))
-                {
+                if (Flags.HasFlag(Args.method2)) {
                     Uasset.UseMethod2 = true;
                 }
 
-                Uexp uexp = new Uexp(Uasset);
-                return uexp.Strings;
+                if (Flags.HasFlag(Args.LOCRES)) {
+                    Uasset.UseWithLocRes = true;
+                }
+
+                if (useLocRes) {
+                    Uexp uexp = new Uexp(Uasset, localizedStrings: LocalizedStrings);
+                    return uexp.Strings;
+                } else {
+                    Uexp uexp = new Uexp(Uasset);
+                    return uexp.Strings;
+                }
+
                 //  SizeOfRecord = uexp.Strings.Count;
-            }
-            else
-            {
+            } else {
                 throw new Exception("Invalid language file type: " + Path.GetFileName(FilePath));
             }
         }
 
 
-        private void ExportFolder(string FolderPath)
-        {
-            if (!Directory.Exists(FolderPath))
-            {
+        private void ExportFolder(string FolderPath, bool useLocRes = false) {
+            if (!Directory.Exists(FolderPath)) {
                 throw new Exception("Directory not existed: " + FolderPath);
             }
             Console.ForegroundColor = ConsoleColor.Blue;
@@ -233,34 +254,28 @@ namespace UE4localizationsTool
             Console.Write("Done\n");
             Console.ForegroundColor = ConsoleColor.White;
 
-            if (LanguageFiles.Count() == 0)
-            {
+            if (LanguageFiles.Count() == 0) {
                 throw new Exception($"This directory '{FolderPath}' not contine any language files.");
             }
 
-            for (int i = 0; i < LanguageFiles.Count(); i++)
-            {
+            for (int i = 0; i < LanguageFiles.Count(); i++) {
                 Console.ForegroundColor = ConsoleColor.Blue;
                 ConsoleText = $"[{i + 1}:{LanguageFiles.Count()}] Exporting... '{Path.GetFileName(LanguageFiles[i])}' ";
                 Console.Write(ConsoleText);
                 Console.ForegroundColor = ConsoleColor.White;
 
                 int ThisPosition = Strings.Count - 1;
-                try
-                {
+                try {
 
-                    List<List<string>> Souce = Export(LanguageFiles[i]);
+                    List<List<string>> Souce = Export(LanguageFiles[i], useLocRes);
 
-                    if (Flags.HasFlag(Args.filter))
-                    {
+                    if (Flags.HasFlag(Args.filter)) {
                         Souce = ApplyFilter(Souce);
                     }
 
                     Strings.Add(new List<string>() { "[~PATHFile~]", "[PATH]" + Souce.Count + "*" + Path.GetFullPath(LanguageFiles[i]).Replace(Path.GetFullPath(FolderPath), "") + "[PATH]", "[~PATHFile~]" });
                     Strings.AddRange(Souce);
-                }
-                catch (Exception EX)
-                {
+                } catch (Exception EX) {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.Write("Fail\n");
                     Console.ForegroundColor = ConsoleColor.White;
@@ -278,34 +293,24 @@ namespace UE4localizationsTool
         }
 
 
-        void EditList(List<List<string>> Strings, string[] StringValues)
-        {
+        void EditList(List<List<string>> Strings, string[] StringValues) {
 
-            if (Flags.HasFlag(Args.filter))
-            {
+            if (Flags.HasFlag(Args.filter)) {
                 ApplyFilter(Strings, StringValues);
                 return;
             }
 
-            if (StringValues.Length < Strings.Count)
-            {
+            if (StringValues.Length < Strings.Count) {
                 throw new Exception("Text file is too short");
             }
-            for (int i = 0; i < StringValues.Length; i++)
-            {
-                try
-                {
-                    if (!Flags.HasFlag(Args.noname))
-                    {
+            for (int i = 0; i < StringValues.Length; i++) {
+                try {
+                    if (!Flags.HasFlag(Args.noname)) {
                         Strings[i][1] = StringValues[i].Split(new char[] { '=' }, 2)[1];
-                    }
-                    else
-                    {
+                    } else {
                         Strings[i][1] = StringValues[i];
                     }
-                }
-                catch
-                {
+                } catch {
                     throw new Exception("Can't parse this line from text file: " + StringValues[i]);
                 }
 
@@ -314,89 +319,71 @@ namespace UE4localizationsTool
 
 
 
-        private void Import(string FilePath, string[] Values, string Option)
-        {
+        private void Import(string FilePath, string[] Values, string Option) {
 
-            if (!File.Exists(FilePath))
-            {
+            if (!File.Exists(FilePath)) {
                 throw new Exception("File not existed: " + FilePath);
             }
 
-            if (FilePath.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
-            {
+            if (FilePath.EndsWith(".locres", StringComparison.OrdinalIgnoreCase)) {
                 var locres = new LocresFile(FilePath);
                 var strings = locres.ExtractTexts();
                 EditList(strings, Values);
                 locres.ImportTexts(strings);
 
-                if (Option == "-import")
-                {
+                if (Option == "-import") {
                     locres.SaveFile(FilePath);
                     return;
                 }
 
                 FilePath = Path.ChangeExtension(FilePath, null) + "_NEW.locres";
                 locres.SaveFile(FilePath);
-            }
-            else if (FilePath.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase) || FilePath.EndsWith(".umap", StringComparison.OrdinalIgnoreCase))
-            {
+            } else if (FilePath.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase) || FilePath.EndsWith(".umap", StringComparison.OrdinalIgnoreCase)) {
                 IUasset Uasset = Uexp.GetUasset(FilePath);
-                if (Flags.HasFlag(Args.method2))
-                {
+                if (Flags.HasFlag(Args.method2)) {
                     Uasset.UseMethod2 = true;
                 }
 
                 Uexp uexp = new Uexp(Uasset);
                 EditList(uexp.Strings, Values);
 
-                if (Option == "-import")
-                {
+                if (Option == "-import") {
                     uexp.SaveFile(FilePath);
                     return;
                 }
 
-                if (FilePath.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
-                {
+                if (FilePath.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase)) {
                     FilePath = Path.ChangeExtension(FilePath, null) + "_NEW.uasset";
-                }
-                else if (FilePath.EndsWith(".umap", StringComparison.OrdinalIgnoreCase))
-                {
+                } else if (FilePath.EndsWith(".umap", StringComparison.OrdinalIgnoreCase)) {
                     FilePath = Path.ChangeExtension(FilePath, null) + "_NEW.umap";
                 }
 
                 uexp.SaveFile(FilePath);
-            }
-            else
-            {
+            } else {
                 throw new Exception("Invalid language file type: " + Path.GetFileName(FilePath));
             }
 
         }
 
-        private void ImportFolder(string FolderPath, string[] Values, string Option)
-        {
+        private void ImportFolder(string FolderPath, string[] Values, string Option) {
 
-            if (!Directory.Exists(FolderPath))
-            {
+            if (!Directory.Exists(FolderPath)) {
                 throw new Exception("Directory not existed: " + FolderPath);
             }
 
 
             int[] Indexs = Values.Select((Value, Index) => (Value.Trim().StartsWith("[PATH]") && Value.Trim().EndsWith("[PATH]")) ? Index : -1).Where(index => index != -1).ToArray();
 
-            if (Indexs.Length == 0)
-            {
+            if (Indexs.Length == 0) {
                 throw new Exception("Source text file is corrupted or not contain text or you modified language files path ([PATH]....[PATH]).");
             }
 
-            for (int PathIndex = 0; PathIndex < Indexs.Length; PathIndex++)
-            {
+            for (int PathIndex = 0; PathIndex < Indexs.Length; PathIndex++) {
                 string[] RecordInfo = Values[Indexs[PathIndex]].Replace("[PATH]", "").Trim().Split(new char[] { '*' }, 2);
                 int ArraySize = int.Parse(RecordInfo[0]);
                 string FilePath = RecordInfo[1];
 
-                if (string.IsNullOrEmpty(FilePath))
-                {
+                if (string.IsNullOrEmpty(FilePath)) {
                     Console.WriteLine("Can't get path from" + Indexs[PathIndex] + "line");
                     continue;
                 }
@@ -409,15 +396,12 @@ namespace UE4localizationsTool
                 string[] StringArrayValues = new string[ArraySize];
                 Array.Copy(Values, Indexs[PathIndex] + 1, StringArrayValues, 0, ArraySize);
 
-                try
-                {
+                try {
                     if (Option == "importall")
                         Import(FilePath, StringArrayValues, "import");
                     else
                         Import(FilePath, StringArrayValues, "-import");
-                }
-                catch (Exception EX)
-                {
+                } catch (Exception EX) {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.Write("Fail\n");
                     Console.ForegroundColor = ConsoleColor.White;
@@ -436,16 +420,13 @@ namespace UE4localizationsTool
         }
 
 
-        private void GetFilterValues()
-        {
+        private void GetFilterValues() {
 
-            if (!File.Exists("FilterValues.txt"))
-            {
+            if (!File.Exists("FilterValues.txt")) {
                 throw new Exception("Can't find 'FilterValues.txt' file, open the GUI and create new one from (Tool>Filter)");
             }
 
-            try
-            {
+            try {
                 List<string> FV = new List<string>();
                 FV.AddRange(File.ReadAllLines("FilterValues.txt"));
                 string[] Controls = FV[0].Split(new char[] { '|' });
@@ -454,78 +435,53 @@ namespace UE4localizationsTool
                 bool.TryParse(Controls[2], out ReverseMode);
                 FV.RemoveAt(0);
                 ArrayValues = FV;
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 throw new Exception("Can't parse 'FilterValues.txt', open the GUI and create new one from (Tool>Filter)\n" + ex.Message);
             }
         }
 
 
-        private List<List<string>> ApplyFilter(List<List<string>> Strings)
-        {
+        private List<List<string>> ApplyFilter(List<List<string>> Strings) {
             List<List<string>> FV = new List<List<string>>();
-            for (int x = 0; x < Strings.Count; x++)
-            {
+            for (int x = 0; x < Strings.Count; x++) {
 
                 bool CanAdd = false;
 
 
-                ArrayValues.ForEach(Value =>
-                  {
+                ArrayValues.ForEach(Value => {
 
-                      if (UseMatching)
-                      {
-                          if (RegularExpression)
-                          {
-                              try
-                              {
-                                  if (Regex.IsMatch(Strings[x][0], Value))
-                                  {
-                                      CanAdd = true;
-                                  }
+                    if (UseMatching) {
+                        if (RegularExpression) {
+                            try {
+                                if (Regex.IsMatch(Strings[x][0], Value)) {
+                                    CanAdd = true;
+                                }
 
-                              }
-                              catch { }
-                          }
-                          else
-                          {
-                              if (Strings[x][0] == Value)
-                              {
-                                  CanAdd = true;
-                              }
-                          }
-                      }
-                      else
-                      {
-                          if (RegularExpression)
-                          {
-                              try
-                              {
-                                  if (Regex.IsMatch(Strings[x][0], Value, RegexOptions.IgnoreCase))
-                                  {
-                                      CanAdd = true;
-                                  }
-                              }
-                              catch { }
-                          }
-                          else
-                          {
-                              if (Strings[x][0].IndexOf(Value, StringComparison.OrdinalIgnoreCase) >= 0)
-                              {
-                                  CanAdd = true;
-                              }
-                          }
-                      }
-                  });
+                            } catch { }
+                        } else {
+                            if (Strings[x][0] == Value) {
+                                CanAdd = true;
+                            }
+                        }
+                    } else {
+                        if (RegularExpression) {
+                            try {
+                                if (Regex.IsMatch(Strings[x][0], Value, RegexOptions.IgnoreCase)) {
+                                    CanAdd = true;
+                                }
+                            } catch { }
+                        } else {
+                            if (Strings[x][0].IndexOf(Value, StringComparison.OrdinalIgnoreCase) >= 0) {
+                                CanAdd = true;
+                            }
+                        }
+                    }
+                });
 
-                if (CanAdd)
-                {
+                if (CanAdd) {
                     if (!ReverseMode)
                         FV.Add(Strings[x]);
-                }
-                else if (ReverseMode)
-                {
+                } else if (ReverseMode) {
                     FV.Add(Strings[x]);
                 }
             }
@@ -533,104 +489,68 @@ namespace UE4localizationsTool
         }
 
 
-        private void ApplyFilter(List<List<string>> Strings, string[] Array)
-        {
+        private void ApplyFilter(List<List<string>> Strings, string[] Array) {
             int i = 0;
-            for (int x = 0; x < Strings.Count; x++)
-            {
+            for (int x = 0; x < Strings.Count; x++) {
 
                 bool CanAdd = false;
 
 
-                ArrayValues.ForEach(Value =>
-                {
+                ArrayValues.ForEach(Value => {
 
-                    if (UseMatching)
-                    {
-                        if (RegularExpression)
-                        {
-                            try
-                            {
-                                if (Regex.IsMatch(Strings[x][0], Value))
-                                {
+                    if (UseMatching) {
+                        if (RegularExpression) {
+                            try {
+                                if (Regex.IsMatch(Strings[x][0], Value)) {
                                     CanAdd = true;
                                 }
 
-                            }
-                            catch { }
-                        }
-                        else
-                        {
-                            if (Strings[x][0] == Value)
-                            {
+                            } catch { }
+                        } else {
+                            if (Strings[x][0] == Value) {
                                 CanAdd = true;
                             }
                         }
-                    }
-                    else
-                    {
-                        if (RegularExpression)
-                        {
-                            try
-                            {
-                                if (Regex.IsMatch(Strings[x][0], Value, RegexOptions.IgnoreCase))
-                                {
+                    } else {
+                        if (RegularExpression) {
+                            try {
+                                if (Regex.IsMatch(Strings[x][0], Value, RegexOptions.IgnoreCase)) {
                                     CanAdd = true;
                                 }
-                            }
-                            catch { }
-                        }
-                        else
-                        {
-                            if (Strings[x][0].IndexOf(Value, StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
+                            } catch { }
+                        } else {
+                            if (Strings[x][0].IndexOf(Value, StringComparison.OrdinalIgnoreCase) >= 0) {
                                 CanAdd = true;
                             }
                         }
                     }
                 });
 
-                if (CanAdd)
-                {
-                    if (!ReverseMode)
-                    {
+                if (CanAdd) {
+                    if (!ReverseMode) {
 
-                        try
-                        {
-                            if (!Flags.HasFlag(Args.noname))
-                            {
+                        try {
+                            if (!Flags.HasFlag(Args.noname)) {
                                 Strings[x][1] = Array[i].Split(new char[] { '=' }, 2)[1];
                                 i++;
-                            }
-                            else
-                            {
+                            } else {
                                 Strings[x][1] = Array[i];
                                 i++;
                             }
-                        }
-                        catch
-                        {
+                        } catch {
                             throw new Exception("Can't parse this line from text file: " + Array[i]);
                         }
                     }
-                }
-                else if (ReverseMode)
-                {
-                    try
-                    {
-                        if (!Flags.HasFlag(Args.noname))
-                        {
+                } else if (ReverseMode) {
+                    try {
+                        if (!Flags.HasFlag(Args.noname)) {
                             Strings[x][1] = Array[i].Split(new char[] { '=' }, 2)[1];
                             i++;
-                        }
-                        else
-                        {
+                        } else {
                             Strings[x][1] = Array[i];
                             i++;
                         }
-                    }
-                    catch
-                    {
+                    } catch {
                         throw new Exception("Can't parse this line from text file: " + Array[i]);
                     }
                 }

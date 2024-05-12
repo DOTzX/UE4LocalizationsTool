@@ -39,7 +39,7 @@ namespace AssetParser
                     Text = memoryList.GetStringValueN();
                 }
 
-                if ((uexp.UassetData.NAMES_DIRECTORY.Count > ID1 && ID1 >= uexp.UassetData.PathCount) && (uexp.UassetData.NAMES_DIRECTORY.Count > ID2 && ID2 >= 0))
+                if ((uexp.UassetData.NameMap.Count > ID1 && ID1 >= uexp.UassetData.PathCount) && (uexp.UassetData.NameMap.Count > ID2 && ID2 >= 0))
                 {
                     if (uexp.UassetData.GetPropertyName(ID1) != "None")
                     {

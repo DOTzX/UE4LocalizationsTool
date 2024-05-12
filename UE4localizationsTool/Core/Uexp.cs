@@ -5,68 +5,67 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 using UE4localizationsTool.Core.Games;
+using UE4localizationsTool.Core.locres;
 
-namespace AssetParser
-{
+namespace AssetParser {
 
-    public class StringNode 
-    {
+    public class StringNode {
         public string NameSpace { get; set; }
         public string Key { get; set; }
         public string Value { get; set; }
 
 
-        public string GetName()
-        {
-            return string.IsNullOrEmpty(NameSpace)?Key: NameSpace+ "::" + Key;
+        public string GetName() {
+            return string.IsNullOrEmpty(NameSpace) ? Key : NameSpace + "::" + Key;
         }
     }
-    
-    public class Uexp : IAsset
-    {
+
+    public class Uexp : IAsset {
 
         public IUasset UassetData;
 
         public List<List<string>> Strings { get; set; }  //[Text id,Text Value,...]
+        public Dictionary<string, string> LocalizedStrings { get; set; }
+
         private int _CurrentIndex;
         public bool IsGood { get; set; } = true;
         public int ExportIndex;
-        public int CurrentIndex
-        {
-            get
-            {
+        public int CurrentIndex {
+            get {
                 // Console.WriteLine(Strings.Count+ " - "+ (_CurrentIndex+1));
                 return _CurrentIndex;
             }
-            set
-            {
+            set {
                 _CurrentIndex = value;
             }
 
         }
 
-        
-     public   List<StringNode> StringNodes { get; set; }
+
+        public List<StringNode> StringNodes { get; set; }
         public bool DumpNameSpaces { get; set; } = false;
 
-        public Uexp(IUasset UassetObject,bool dumpnamespaces=false)
-        {
+        public Uexp(IUasset UassetObject, bool dumpnamespaces = false, Dictionary<string, string> localizedStrings = null) {
             UassetData = UassetObject;
             Strings = new List<List<string>>();
             CurrentIndex = 0;
 
-            if (dumpnamespaces) 
-            {
+            if (dumpnamespaces) {
                 StringNodes = new List<StringNode>();
-               this.DumpNameSpaces = dumpnamespaces;
+                this.DumpNameSpaces = dumpnamespaces;
             }
-            
+
+            LocalizedStrings = localizedStrings;
+
+            if (UassetData.UseWithLocRes && !(LocalizedStrings?.Count > 0)) {
+                IAsset locres = new LocresFile("Game.locres");
+                LocalizedStrings = locres.ExtractDatas();
+            }
+
             ReadOrEdit();
         }
 
-
-        public static IUasset GetUasset(string uassetpath)
-        {
+        public static IUasset GetUasset(string uassetpath) {
             var StreamFile = File.Open(uassetpath, FileMode.Open, FileAccess.Read);
             var array = new byte[4];
             StreamFile.Read(array, 0, array.Length);
@@ -76,80 +75,98 @@ namespace AssetParser
             if (array[0] == 0xC1 && array[1] == 0x83 && array[2] == 0x2A && array[3] == 0x9E)//pak -> uasset
             {
                 return new Uasset(uassetpath);
-            }
-            else//utoc -> uasset
-            {
+            } else//utoc -> uasset
+              {
                 return new IoPackage(uassetpath);
             }
 
         }
 
-        private void ReadOrEdit(bool Modify = false)
-        {
+        private void ReadOrEdit(bool Modify = false) {
+            if (false) {
+#pragma warning disable CS0162 // Unreachable code detected
+                string _txt = "NameMap:\n";
+#pragma warning restore CS0162 // Unreachable code detected
+                for (int i = 0; i < UassetData.NameMap.Count; i++) {
+                    _txt += $"[{i}] {UassetData.NameMap[i]}\n";
+                }
+                File.WriteAllText("NameMap.txt", _txt);
 
-            for (int n = 0; n < UassetData.Exports_Directory.Count; n++)
-            {
+                _txt = "ExportMap:\n";
+                for (int i = 0; i < UassetData.ExportMap.Count; i++) {
+                    _txt += $"[{i}] ClassIndex: {UassetData.ExportMap[i].ClassIndex}\n";
+                    _txt += $"[{i}] SuperIndex: {UassetData.ExportMap[i].SuperIndex}\n";
+                    _txt += $"[{i}] TemplateIndex: {UassetData.ExportMap[i].TemplateIndex}\n";
+                    _txt += $"[{i}] OuterIndex: {UassetData.ExportMap[i].OuterIndex}\n";
+                    _txt += $"[{i}] ObjectName: {UassetData.ExportMap[i].ObjectName}\n";
+                    _txt += $"[{i}] ExportMemberType: {UassetData.ExportMap[i].ExportMemberType}\n";
+                    _txt += $"[{i}] SerialSize: {UassetData.ExportMap[i].SerialSize}\n";
+                    _txt += $"[{i}] SerialOffset: {UassetData.ExportMap[i].SerialOffset}\n\n";
+                }
+                File.WriteAllText("ExportMap.txt", _txt);
+
+                _txt = "ImportMap:\n";
+                for (int i = 0; i < UassetData.ImportMap.Count; i++) {
+                    _txt += $"[{i}] ClassPackage: {UassetData.ImportMap[i].ClassPackage}\n";
+                    _txt += $"[{i}] ClassName: {UassetData.ImportMap[i].ClassName}\n";
+                    _txt += $"[{i}] OuterIndex: {UassetData.ImportMap[i].OuterIndex}\n";
+                    _txt += $"[{i}] ObjectName: {UassetData.ImportMap[i].ObjectName}\n";
+                    _txt += $"[{i}] PackageName: {UassetData.ImportMap[i].PackageName}\n\n";
+                }
+                File.WriteAllText("ImportMap.txt", _txt);
+            }
+
+            for (int n = 0; n < UassetData.ExportMap.Count; n++) {
                 ExportIndex = n;
-                MemoryList memoryList = new MemoryList(UassetData.Exports_Directory[n].ExportData);
-                try
-                {
-                    ConsoleMode.Print("Block Start offset: " + UassetData.Exports_Directory[n].ExportStart.ToString(), ConsoleColor.DarkRed);
-                    ConsoleMode.Print("Block Size: " + UassetData.Exports_Directory[n].ExportLength.ToString(), ConsoleColor.DarkRed);
+                MemoryList memoryList = new MemoryList(UassetData.ExportMap[n].ExportData);
+                try {
+                    ConsoleMode.Print("Block Start offset: " + UassetData.ExportMap[n].SerialOffset.ToString(), ConsoleColor.DarkRed);
+                    ConsoleMode.Print("Block Size: " + UassetData.ExportMap[n].SerialSize.ToString(), ConsoleColor.DarkRed);
 
                     memoryList.Seek(0); //Seek to beginning of Block
 
-                    if (UassetData.UseMethod2)
-                    {
+                    if (UassetData.UseMethod2) {
                         new UDataTable(memoryList, this, Modify);
                         continue;
                     }
 
-                    ConsoleMode.Print(UassetData.GetExportPropertyName(UassetData.Exports_Directory[n].ExportClass), ConsoleColor.DarkRed);
-
-
-                    if (memoryList.GetByteValue(false) == 0 && UassetData.GetExportPropertyName(UassetData.Exports_Directory[n].ExportClass) != "MovieSceneCompiledData" && memoryList.GetIntValue(false) > UassetData.NAMES_DIRECTORY.Count)
-                    {
+                    if (memoryList.GetByteValue(false) == 0 && UassetData.GetExportPropertyName(UassetData.ExportMap[n].ClassIndex) != "MovieSceneCompiledData" && memoryList.GetIntValue(false) > UassetData.NameMap.Count) {
                         memoryList.Skip(2);
                         goto Start;
                     }
-
 
                     ConsoleMode.Print($"-----------{n}------------", ConsoleColor.Red);
                     _ = new StructProperty(memoryList, this, UassetData.UseFromStruct, false, Modify);
                     ConsoleMode.Print($"-----------End------------", ConsoleColor.Red);
 
-                    if (memoryList.EndofFile())
-                    {
+                    if (memoryList.EndofFile()) {
                         continue;
                     }
+
                 Start:
                     ConsoleMode.Print($"-----------{n}------------", ConsoleColor.DarkRed);
-                    switch (UassetData.GetExportPropertyName(UassetData.Exports_Directory[n].ExportClass))
-                    {
+                    ConsoleMode.Print(UassetData.GetExportPropertyName(UassetData.ExportMap[n].ClassIndex), ConsoleColor.DarkRed);
+                    switch (UassetData.GetExportPropertyName(UassetData.ExportMap[n].ClassIndex)) {
                         case "StringTable":
                             new StringTable(memoryList, this, Modify);
                             break;
                         case "CompositeDataTable":
                         case "DataTable":
-                            if (memoryList.GetIntValue(false) != -5)
-                            {
+                            if (memoryList.GetIntValue(false) != -5) {
+                                ConsoleMode.Print("POS0a: " + memoryList.GetPosition().ToString("X"));
                                 new DataTable(memoryList, this, Modify);
-                            }
-                            else
-                            {
+                            } else {
                                 //For not effect in original file structure
-                                if (memoryList.GetIntValue(false) != -5)
-                                {
+                                if (memoryList.GetIntValue(false) != -5) {
+                                    ConsoleMode.Print("POS0b: " + memoryList.GetPosition().ToString("X"));
                                     new DataTable(memoryList, this, Modify);
-                                }
-                                else
-                                {
+                                } else {
+                                    ConsoleMode.Print("POS0c: " + memoryList.GetPosition().ToString("X"));
                                     new UDataTable(memoryList, this, Modify);
                                 }
                             }
                             break;
                         case "Spreadsheet":
-
                             new Spreadsheet(memoryList, this, Modify);
                             break;
                         case "Function":
@@ -172,9 +189,7 @@ namespace AssetParser
                             break;
                     }
                     ConsoleMode.Print($"-----------End------------", ConsoleColor.DarkRed);
-                }
-                catch (Exception ex)
-                {
+                } catch (Exception ex) {
                     ConsoleMode.Print("Skip this export:\n" + ex.ToString(), ConsoleColor.Red, ConsoleMode.ConsoleModeType.Error);
                     // Skip this export
                 }
@@ -183,53 +198,41 @@ namespace AssetParser
         }
 
 
-        private void ModifyStrings()
-        {
+        private void ModifyStrings() {
             CurrentIndex = 0;
             ReadOrEdit(true);
         }
 
-        public void SaveFile(string FilPath)
-        {
+        public void SaveFile(string FilPath) {
             ModifyStrings();
             UassetData.ExportReadOrEdit(true);
             UassetData.UpdateOffset();
-            if (UassetData.IsNotUseUexp)
-            {
+            if (UassetData.IsNotUseUexp) {
                 MakeBlocks();
                 UassetData.UassetFile.WriteFile(System.IO.Path.ChangeExtension(FilPath, FilPath.ToLower().EndsWith(".umap") ? ".umap" : ".uasset"));
-            }
-            else
-            {
+            } else {
                 MemoryList UexpData = MakeBlocks();
                 UassetData.UassetFile.WriteFile(System.IO.Path.ChangeExtension(FilPath, FilPath.ToLower().EndsWith(".umap") ? ".umap" : ".uasset"));
                 UexpData.WriteFile(System.IO.Path.ChangeExtension(FilPath, ".uexp"));
             }
         }
 
-        private MemoryList MakeBlocks()
-        {
+        private MemoryList MakeBlocks() {
 
-            if (UassetData.IsNotUseUexp)
-            {
-                UassetData.UassetFile.SetSize(UassetData.File_Directory_Offset);
-                UassetData.Exports_Directory.ForEach(x =>
-                {
+            if (UassetData.IsNotUseUexp) {
+                UassetData.UassetFile.SetSize(UassetData.TotalHeaderSize);
+                UassetData.ExportMap.ForEach(x => {
                     UassetData.UassetFile.MemoryListData.AddRange(x.ExportData);
                 });
 
-                if (!UassetData.IOFile)
-                {
+                if (!UassetData.IOFile) {
                     UassetData.UassetFile.Add(2653586369);
                 }
                 return UassetData.UassetFile;
-            }
-            else
-            {
+            } else {
 
                 MemoryList memoryList = new MemoryList();
-                UassetData.Exports_Directory.ForEach(x =>
-                {
+                UassetData.ExportMap.ForEach(x => {
                     memoryList.MemoryListData.AddRange(x.ExportData);
                 });
                 memoryList.Add(2653586369);
@@ -237,8 +240,7 @@ namespace AssetParser
             }
         }
 
-        public void AddItemsToDataGridView(DataGridView dataGrid)
-        {
+        public void AddItemsToDataGridView(DataGridView dataGrid) {
             dataGrid.DataSource = null;
             dataGrid.Rows.Clear();
             dataGrid.Columns.Clear();
@@ -247,11 +249,10 @@ namespace AssetParser
             dataTable.Columns.Add("Name");
             dataTable.Columns["Name"].ReadOnly = true;
             dataTable.Columns.Add("Text value");
-            dataTable.Columns.Add("index",typeof(int));
+            dataTable.Columns.Add("index", typeof(int));
 
             int i = 0;
-            foreach (var item in Strings)
-            {
+            foreach (var item in Strings) {
                 dataTable.Rows.Add(item[0], item[1], i++);
             }
 
@@ -266,37 +267,29 @@ namespace AssetParser
             dataGrid.CellToolTipTextNeeded += DataGrid_CellToolTipTextNeeded;
         }
 
-        private void DataGrid_CellToolTipTextNeeded(object sender, DataGridViewCellToolTipTextNeededEventArgs e)
-        {
-            if (e.RowIndex >= 0)
-            {
-                var dataGridView = (DataGridView)sender;
+        private void DataGrid_CellToolTipTextNeeded(object sender, DataGridViewCellToolTipTextNeededEventArgs e) {
+            if (e.RowIndex >= 0) {
+                var dataGridView = (DataGridView) sender;
 
                 bool isFound = false;
-                foreach (DataGridViewColumn column in dataGridView.Columns)
-                {
-                    if (column.Name == "index")
-                    {
+                foreach (DataGridViewColumn column in dataGridView.Columns) {
+                    if (column.Name == "index") {
                         isFound = true;
                     }
                 }
                 if (!isFound) return;
 
 
-                if (dataGridView.Columns[e.ColumnIndex].Name == "Name")
-                {
+                if (dataGridView.Columns[e.ColumnIndex].Name == "Name") {
                     var rowIndexCell = dataGridView.Rows[e.RowIndex].Cells["index"];
 
-                    if (rowIndexCell != null && rowIndexCell.Value != null)
-                    {
+                    if (rowIndexCell != null && rowIndexCell.Value != null) {
                         var rowIndex = Convert.ToInt32(rowIndexCell.Value);
 
-                        if (rowIndex >= 0 && rowIndex < Strings.Count)
-                        {
+                        if (rowIndex >= 0 && rowIndex < Strings.Count) {
                             var item = Strings[rowIndex];
 
-                            if (item.Count > 2)
-                            {
+                            if (item.Count > 2) {
                                 e.ToolTipText = item[2];
                             }
                         }
@@ -305,39 +298,30 @@ namespace AssetParser
             }
         }
 
-        private void DataGrid_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
-        {
-            if (e.RowIndex >= 0)
-            {
-                var dataGridView = (DataGridView)sender;
+        private void DataGrid_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e) {
+            if (e.RowIndex >= 0) {
+                var dataGridView = (DataGridView) sender;
 
                 bool isFound = false;
-                foreach (DataGridViewColumn column in dataGridView.Columns)
-                {
-                    if (column.Name == "index")
-                    {
+                foreach (DataGridViewColumn column in dataGridView.Columns) {
+                    if (column.Name == "index") {
                         isFound = true;
                     }
                 }
                 if (!isFound) return;
 
-                if (dataGridView.Columns[e.ColumnIndex].Name == "Name")
-                {
+                if (dataGridView.Columns[e.ColumnIndex].Name == "Name") {
                     var rowIndexCell = dataGridView.Rows[e.RowIndex].Cells["index"];
-                    if (rowIndexCell != null && rowIndexCell.Value != null)
-                    {
+                    if (rowIndexCell != null && rowIndexCell.Value != null) {
                         var rowIndex = Convert.ToInt32(rowIndexCell.Value);
 
-                        if (rowIndex >= 0 && rowIndex < Strings.Count)
-                        {
+                        if (rowIndex >= 0 && rowIndex < Strings.Count) {
                             var item = Strings[rowIndex];
 
-                            if (item.Count > 3)
-                            {
+                            if (item.Count > 3) {
                                 e.CellStyle.BackColor = ColorTranslator.FromHtml(item[3]);
                             }
-                            if (item.Count > 4)
-                            {
+                            if (item.Count > 4) {
                                 e.CellStyle.ForeColor = ColorTranslator.FromHtml(item[4]);
                             }
                         }
@@ -347,25 +331,24 @@ namespace AssetParser
         }
 
 
-        public void LoadFromDataGridView(DataGridView dataGrid)
-        {
-            foreach (DataGridViewRow row in dataGrid.Rows)
-            {
+        public void LoadFromDataGridView(DataGridView dataGrid) {
+            foreach (DataGridViewRow row in dataGrid.Rows) {
                 if (row.Cells["index"].Value is int itemIndex &&
-                    row.Cells["Text value"].Value != null)
-                {
+                    row.Cells["Text value"].Value != null) {
                     Strings[itemIndex][1] = row.Cells["Text value"].Value.ToString();
                 }
             }
         }
 
-        public List<List<string>> ExtractTexts()
-        {
+        public List<List<string>> ExtractTexts() {
             return Strings;
         }
 
-        public void ImportTexts(List<List<string>> strings)
-        {
+        public Dictionary<string, string> ExtractDatas() {
+            return LocalizedStrings;
+        }
+
+        public void ImportTexts(List<List<string>> strings) {
             Strings = strings;
         }
     }

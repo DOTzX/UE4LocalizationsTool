@@ -67,6 +67,7 @@ namespace UE4localizationsTool
                 {
                     IUasset Uasset = await Task.Run(() => Uexp.GetUasset(filePath));
                     Uasset.UseMethod2 = Uasset.UseMethod2 ? Uasset.UseMethod2 : Method2.Checked;
+                    Uasset.UseWithLocRes = Uasset.UseWithLocRes ? Uasset.UseWithLocRes : UseWithLocRes.Checked;
                     Asset = await Task.Run(() => new Uexp(Uasset));
                     CreateBackupList();
                     if (!Asset.IsGood)

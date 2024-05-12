@@ -11,6 +11,7 @@ namespace AssetParser
         void LoadFromDataGridView(DataGridView dataGrid);
         void SaveFile(string FilPath);
         List<List<string>> ExtractTexts();
+        Dictionary<string, string> ExtractDatas();
         void ImportTexts(List<List<string>> strings);
 
 

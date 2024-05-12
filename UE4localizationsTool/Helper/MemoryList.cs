@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -43,8 +44,6 @@ namespace Helper.MemoryList
 
             }
         }
-
-
         private int MemoryListIndex;
         public int MemoryListPosition
         {
@@ -80,14 +79,10 @@ namespace Helper.MemoryList
 
             }
         }
-
-
         public MemoryList()
         {
             MemoryListData = new List<byte>();
         }
-
-
         public MemoryList(string FilePath)
         {
             if (new FileInfo(FilePath).Length > int.MaxValue)
@@ -97,19 +92,14 @@ namespace Helper.MemoryList
             MemoryListData = File.ReadAllBytes(FilePath).ToList();
 
         }
-
-
         public MemoryList(List<byte> FileData)
         {
             MemoryListData = FileData;
         }
-
-
         public MemoryList(byte[] FileData)
         {
             MemoryListData = FileData.ToList();
         }
-
         //no plan for now
         private MemoryList(MemoryList FileData, int offset, int Length)
         {
@@ -135,27 +125,22 @@ namespace Helper.MemoryList
                 MemoryListPosition = MemoryListSize - Value;
             }
         }
-
         public void Skip(int Value)
         {
             MemoryListPosition += Value;
         }
-
         public int GetPosition()
         {
             return MemoryListPosition;
         }
-
         public int GetSize()
         {
             return MemoryListSize;
         }
-
         public void SetPosition(int Value)
         {
             MemoryListPosition = Value;
         }
-
         public void SetSize(int Value)
         {
             if (MemoryListPosition> Value)
@@ -168,39 +153,32 @@ namespace Helper.MemoryList
 
 
         }
-
         public void WriteFile(string FilePath)
         {
             File.WriteAllBytes(FilePath, MemoryListData.ToArray());
         }
-
         public byte[] ToArray()
         {
             return MemoryListData.ToArray();
         }
-
         public List<byte> ToList()
         {
             return MemoryListData;
         }
-
         public bool EndofFile()
         {
             return MemoryListPosition == MemoryListSize;
         }
-
         public bool isEmpty()
         {
             return MemoryListSize == 0;
         }
-
         public void Clear()
         {
 
             MemoryListData.Clear();
             MemoryListPosition = 0;
         }
-
         public void Add(object Value)
         {
             if (Value is byte)
@@ -256,12 +234,10 @@ namespace Helper.MemoryList
                 throw new Exception("Unknown type");
             }
         }
-
         public void Append(object Value)
         {
             Add(Value);
         }
-
         public void Write(object Value, bool SavePosition = true, int SeekAndRead = -1, Encoding encoding = null)
         {
             if (Value is byte)
@@ -317,8 +293,6 @@ namespace Helper.MemoryList
                 throw new Exception("Unknown type");
             }
         }
-
-  
         public void Dispose()
         {
             Clear();
@@ -336,17 +310,24 @@ namespace Helper.MemoryList
         {
             SetByteValue(Convert.ToByte(Value), SavePosition, SeekAndWrite);
         }
-
+        public bool GetBool32Value(bool SavePosition = true, int SeekAndRead = -1) {
+            var i = GetIntValue(SavePosition, SeekAndRead);
+            if (i == 0) return false;
+            if (i == 1) return true;
+            throw new Exception("Unknown type");
+        }
+        public void SetBool32Value(bool Value, bool SavePosition = true, int SeekAndRead = -1) {
+            if (!Value) SetIntValue(0, SavePosition, SeekAndRead);
+            else SetIntValue(1, SavePosition, SeekAndRead);
+        }
         public void InsertBoolValue(bool Value, bool SavePosition = true, int SeekAndWrite = -1)
         {
             InsertByteValue(Convert.ToByte(Value), SavePosition, SeekAndWrite);
         }
-
         public void DeleteBoolValue(int SeekAndWrite = -1)
         {
             DeleteByteValue(SeekAndWrite);
         }
-
         #endregion
 
 
@@ -374,8 +355,6 @@ namespace Helper.MemoryList
             return (sbyte)GetByteValue(SavePosition, SeekAndRead);
 
         }
-
-
         public void SetByteValue(byte value, bool SavePosition = true, int SeekAndRead = -1)
         {
             if (SeekAndRead != -1)
@@ -411,12 +390,10 @@ namespace Helper.MemoryList
             }
             MemoryListData[MemoryListPosition] = value;
         }
-
         public void SetUByteValue(sbyte value, bool SavePosition = true, int SeekAndRead = -1)
         {
             SetByteValue((byte)value, SavePosition, SeekAndRead);
         }
-
         public void InsertByteValue(byte value, bool SavePosition = true, int SeekAndRead = -1)
         {
             if (SeekAndRead != -1)
@@ -439,10 +416,6 @@ namespace Helper.MemoryList
         {
             InsertByteValue((byte)value, SavePosition, SeekAndRead);
         }
-
-
-
-
         public void DeleteByteValue(int SeekAndRead = -1)
         {
             if (MemoryListSize < 1)
@@ -466,14 +439,11 @@ namespace Helper.MemoryList
             }
             MemoryListData.RemoveAt(MemoryListPosition);
         }
-
         public void DeleteUByteValue(int SeekAndRead = -1)
         {
             DeleteByteValue(SeekAndRead);
 
         }
-
-
         public byte[] GetBytes(int Count, bool SavePosition = true, int SeekAndRead = -1)
         {
 
@@ -502,7 +472,6 @@ namespace Helper.MemoryList
             array = MemoryListData.GetRange(MemoryListIndex, Count).ToArray();
             return array;
         }
-
         public void SetBytes(byte[] BytesArray, bool SavePosition = true, int SeekAndRead = -1)
         {
 
@@ -529,7 +498,6 @@ namespace Helper.MemoryList
                 SetByteValue(BytesArray[i], false, MemoryListIndex + i);
             }
         }
-
         public void InsertBytes(byte[] BytesArray, bool SavePosition = true, int SeekAndRead = -1)
         {
             if (SeekAndRead != -1)
@@ -568,10 +536,6 @@ namespace Helper.MemoryList
             }
             MemoryListData.RemoveRange(MemoryListPosition, count);
         }
-
-
-
-
         public void ReplaceBytes(int OldBytesLenght, byte[] NewBytes, bool SavePosition = true, int SeekAndRead = -1)
         {
 
@@ -600,7 +564,6 @@ namespace Helper.MemoryList
             MemoryListData.RemoveRange(MemoryListPosition, OldBytesLenght);
             MemoryListData.InsertRange(MemoryListPosition, NewBytes);
         }
-
         #endregion
 
 
@@ -614,13 +577,10 @@ namespace Helper.MemoryList
             }
             return (short)(array[0] | (array[1] << 8));
         }
-
         public ushort GetUShortValue(bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             return (ushort)(GetShortValue(SavePosition, SeekAndRead, _Endian));
         }
-
-
         public void SetShortValue(short value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -632,12 +592,10 @@ namespace Helper.MemoryList
             }
             SetBytes(array, SavePosition, SeekAndRead);
         }
-
         public void SetUShortValue(ushort value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             SetShortValue((short)value, SavePosition, SeekAndRead, _Endian);
         }
-
         public void InsertShortValue(short value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -654,7 +612,6 @@ namespace Helper.MemoryList
         {
             InsertShortValue((short)value, SavePosition, SeekAndRead, _Endian);
         }
-
         public void DeleteShortValue(int SeekAndRead = -1)
         {
             if (MemoryListSize < 2)
@@ -663,13 +620,10 @@ namespace Helper.MemoryList
             }
             DeleteBytes(2, SeekAndRead);
         }
-
         public void DeleteUShortValue(int SeekAndRead = -1)
         {
             DeleteShortValue(SeekAndRead);
         }
-
-
         public short[] GetShorts(int Count, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             if (MemoryListSize < Count * 2)
@@ -746,9 +700,6 @@ namespace Helper.MemoryList
             }
             return array;
         }
-
-
-
         #endregion
 
 
@@ -762,13 +713,10 @@ namespace Helper.MemoryList
             }
             return array[0] | (array[1] << 8) | (array[2] << 16) | (array[3] << 24);
         }
-
         public uint GetUIntValue(bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             return (uint)(GetIntValue(SavePosition, SeekAndRead, _Endian));
         }
-
-
         public void SetIntValue(int value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -780,12 +728,10 @@ namespace Helper.MemoryList
             }
             SetBytes(array, SavePosition, SeekAndRead);
         }
-
         public void SetUIntValue(uint value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             SetIntValue((int)value, SavePosition, SeekAndRead, _Endian);
         }
-
         public void InsertIntValue(int value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -802,7 +748,6 @@ namespace Helper.MemoryList
         {
             InsertIntValue((int)value, SavePosition, SeekAndRead, _Endian);
         }
-
         public void DeleteIntValue(int SeekAndRead = -1)
         {
             if (MemoryListSize < 4)
@@ -811,13 +756,10 @@ namespace Helper.MemoryList
             }
             DeleteBytes(4, SeekAndRead);
         }
-
         public void DeleteUIntValue(int SeekAndRead = -1)
         {
             DeleteIntValue(SeekAndRead);
         }
-
-
         public int[] GetInts(int Count, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             if (MemoryListSize < Count * 4)
@@ -856,8 +798,6 @@ namespace Helper.MemoryList
             }
             return array;
         }
-
-
         public uint[] GetUInts(int Count, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             if (MemoryListSize < Count * 4)
@@ -896,7 +836,6 @@ namespace Helper.MemoryList
             }
             return array;
         }
-
         #endregion
 
 
@@ -910,9 +849,6 @@ namespace Helper.MemoryList
             }
             return BitConverter.ToSingle(array, 0);
         }
-
-
-
         public void SetFloatValue(float value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -924,9 +860,6 @@ namespace Helper.MemoryList
             }
             SetBytes(array, SavePosition, SeekAndRead);
         }
-
-
-
         public void InsertFloatValue(float value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -939,7 +872,6 @@ namespace Helper.MemoryList
             InsertBytes(array, SavePosition, SeekAndRead);
 
         }
-
         public void DeleteFloatValue(int SeekAndRead = -1)
         {
             if (MemoryListSize < 4)
@@ -948,8 +880,6 @@ namespace Helper.MemoryList
             }
             DeleteBytes(4, SeekAndRead);
         }
-
-
         public float[] GetFloats(int Count, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             if (MemoryListSize < Count * 4)
@@ -988,7 +918,6 @@ namespace Helper.MemoryList
             }
             return array;
         }
-
         #endregion
 
 
@@ -1002,13 +931,10 @@ namespace Helper.MemoryList
             }
             return BitConverter.ToInt64(array, 0);
         }
-
         public ulong GetUInt64Value(bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             return (ulong)(GetInt64Value(SavePosition, SeekAndRead, _Endian));
         }
-
-
         public void SetInt64Value(long value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -1020,12 +946,10 @@ namespace Helper.MemoryList
             }
             SetBytes(array, SavePosition, SeekAndRead);
         }
-
         public void SetUInt64Value(ulong value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             SetInt64Value((long)value, SavePosition, SeekAndRead, _Endian);
         }
-
         public void InsertInt64Value(long value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -1042,7 +966,6 @@ namespace Helper.MemoryList
         {
             InsertInt64Value((long)value, SavePosition, SeekAndRead, _Endian);
         }
-
         public void DeleteInt64Value(int SeekAndRead = -1)
         {
             if (MemoryListSize < 8)
@@ -1051,13 +974,10 @@ namespace Helper.MemoryList
             }
             DeleteBytes(8, SeekAndRead);
         }
-
         public void DeleteUInt64Value(int SeekAndRead = -1)
         {
             DeleteInt64Value(SeekAndRead);
         }
-
-
         public long[] GetInt64s(int Count, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             if (MemoryListSize < Count * 8)
@@ -1134,9 +1054,6 @@ namespace Helper.MemoryList
             }
             return array;
         }
-
-
-
         #endregion
 
 
@@ -1150,7 +1067,6 @@ namespace Helper.MemoryList
             }
             return BitConverter.ToDouble(array, 0);
         }
-
         public void SetDoubleValue(double value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -1162,7 +1078,6 @@ namespace Helper.MemoryList
             }
             SetBytes(array, SavePosition, SeekAndRead);
         }
-
         public void InsertDoubleValue(double value, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
 
@@ -1174,7 +1089,6 @@ namespace Helper.MemoryList
             }
             InsertBytes(array, SavePosition, SeekAndRead);
         }
-
         public void DeleteDoubleValue(int SeekAndRead = -1)
         {
             if (MemoryListSize < 8)
@@ -1183,8 +1097,6 @@ namespace Helper.MemoryList
             }
             DeleteBytes(8, SeekAndRead);
         }
-
-
         public double[] GetDoubles(int Count, bool SavePosition = true, int SeekAndRead = -1, Endian _Endian = Endian.Little)
         {
             if (MemoryListSize < Count * 8)
@@ -1223,7 +1135,6 @@ namespace Helper.MemoryList
             }
             return array;
         }
-
         #endregion
 
 
@@ -1244,8 +1155,6 @@ namespace Helper.MemoryList
             byte[] array = GetBytes(StringLenght, SavePosition, SeekAndRead);
             return encoding.GetString(array);
         }
-
-
         public void SetStringValue(string String, bool SavePosition = true, int SeekAndRead = -1, Encoding encoding = null)
         {
             if (encoding == null)
@@ -1254,7 +1163,6 @@ namespace Helper.MemoryList
             }
             SetBytes(encoding.GetBytes(String), SavePosition, SeekAndRead);
         }
-
         public void InsertStringValue(string String, bool SavePosition = true, int SeekAndRead = -1, Encoding encoding = null)
         {
             if (encoding == null)
@@ -1263,8 +1171,6 @@ namespace Helper.MemoryList
             }
             InsertBytes(encoding.GetBytes(String), SavePosition, SeekAndRead);
         }
-
-
         private byte[] GetString(Encoding encoding, bool SavePosition = true)
         {
             int ThisPosition = GetPosition();
@@ -1302,7 +1208,6 @@ namespace Helper.MemoryList
 
             return StringValues.ToArray();
         }
-
         public string GetStringValueN(bool SavePosition = true, int SeekAndRead = -1, Encoding encoding = null)
         {
             if (encoding == null)
@@ -1331,8 +1236,6 @@ namespace Helper.MemoryList
             Seek(ThisPosition);
             return Value;
         }
-
-
         public int DeleteStringN(int SeekAndRead = -1, Encoding encoding = null)
         {
             if (encoding == null)
@@ -1355,8 +1258,6 @@ namespace Helper.MemoryList
             DeleteBytes(GetString(encoding, false).Length);
             return StringLength;
         }
-
-
         public void SetStringValueN(string String, bool SavePosition = true, int SeekAndRead = -1, Encoding encoding = null)
         {
             if (encoding == null)
@@ -1365,7 +1266,6 @@ namespace Helper.MemoryList
             }
             SetBytes(encoding.GetBytes(String + '\0'), SavePosition, SeekAndRead);
         }
-
         public void InsertStringValueN(string String, bool SavePosition = true, int SeekAndRead = -1, Encoding encoding = null)
         {
             if (encoding == null)
@@ -1374,7 +1274,6 @@ namespace Helper.MemoryList
             }
             InsertBytes(encoding.GetBytes(String + '\0'), SavePosition, SeekAndRead);
         }
-
         public int GetStringLenght(string String, Encoding encoding = null)
         {
             if (encoding == null)
@@ -1395,7 +1294,6 @@ namespace Helper.MemoryList
 
 
         #region Struct
-
         public T GetStructureValues<T>(bool SavePosition = true, int SeekAndRead = -1)
         {
             var structureSize = Marshal.SizeOf(typeof(T));
@@ -1411,8 +1309,6 @@ namespace Helper.MemoryList
             handle.Free();
             return structure;
         }
-
-
         public void SetStructureValus<T>(T structure, bool SavePosition = true, int SeekAndRead = -1)
         {
             var structureSize = Marshal.SizeOf(typeof(T));

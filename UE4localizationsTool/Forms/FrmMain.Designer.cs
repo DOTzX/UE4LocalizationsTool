@@ -69,6 +69,7 @@ namespace UE4localizationsTool
             this.Checkforupdates = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.Method2 = new System.Windows.Forms.ToolStripMenuItem();
+            this.UseWithLocRes = new System.Windows.Forms.ToolStripMenuItem();
             this.UseFixedSize = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.commandLinesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -175,6 +176,7 @@ namespace UE4localizationsTool
             this.Checkforupdates,
             this.toolStripSeparator4,
             this.Method2,
+            this.UseWithLocRes,
             this.UseFixedSize});
             this.editToolStripMenuItem.Name = "editToolStripMenuItem";
             this.editToolStripMenuItem.Size = new System.Drawing.Size(41, 24);
@@ -415,6 +417,14 @@ namespace UE4localizationsTool
             this.Method2.ToolTipText = "trying to catch text without using ue4 asset structure (for uasset and umap only)" +
     "";
             this.Method2.CheckedChanged += new System.EventHandler(this.Method2_CheckedChanged);
+            // 
+            // UseWithLocRes
+            // 
+            this.UseWithLocRes.CheckOnClick = true;
+            this.UseWithLocRes.Name = "UseWithLocRes";
+            this.UseWithLocRes.Size = new System.Drawing.Size(229, 22);
+            this.UseWithLocRes.Text = "Use with locres";
+            this.UseWithLocRes.ToolTipText = "trying to catch text within Game.locres";
             // 
             // UseFixedSize
             // 
@@ -708,6 +718,7 @@ namespace UE4localizationsTool
         private System.Windows.Forms.ToolStripMenuItem UseFixedSize;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.ToolStripMenuItem Method2;
+        private System.Windows.Forms.ToolStripMenuItem UseWithLocRes;
         private System.Windows.Forms.ToolStripMenuItem darkModeToolStripMenuItem;
         private System.Windows.Forms.DataGridViewTextBoxColumn TextName;
         private System.Windows.Forms.DataGridViewTextBoxColumn TextValue;

@@ -553,6 +553,20 @@ namespace UE4localizationsTool.Core.locres
             return strings;
         }
 
+        public Dictionary<string, string> ExtractDatas() {
+            var strings = new Dictionary<string, string>();
+
+            foreach (var names in this) {
+                foreach (var table in names) {
+                    if (!string.IsNullOrEmpty(names.Name))
+                        strings[names.Name + "::" + table.key] = table.Value;
+                    else
+                        strings[table.key] = table.Value;
+                }
+            }
+            return strings;
+        }
+
 
         public void ImportTexts(List<List<string>> strings)
         {

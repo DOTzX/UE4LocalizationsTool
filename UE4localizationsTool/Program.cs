@@ -19,8 +19,13 @@ namespace UE4localizationsTool
          $"{AppDomain.CurrentDomain.FriendlyName}  importall  <Folder> <TxtFile>  <Options>\n" +
          $"{AppDomain.CurrentDomain.FriendlyName} -importall  <Folder> <TxtFile>  <Options>\n\n" +
           "- for import without rename file be careful with this command.\n\n" +
+            
 
-          "Options:\n" +
+          "Options:\n\n" +
+            
+          "To load localized string with export/exportall, add -locres"+
+          "\n(Remember locres file name should exist and named Game.locres)\n\n" +
+
           "To use last filter you applied before in GUI, add (-f \\ -filter) after command line\n" +
           "filter will apply only in name table " +
             "\n(Remember to apply the same filter when importing)\n\n" +
@@ -33,8 +38,10 @@ namespace UE4localizationsTool
 
           "Examples:\n" +
          $"{AppDomain.CurrentDomain.FriendlyName} export Actions.uasset\n" +
+         $"{AppDomain.CurrentDomain.FriendlyName} export Actions.uasset -locres Game.locres\n" +
          $"{AppDomain.CurrentDomain.FriendlyName} import Actions.uasset.txt\n" +
          $"{AppDomain.CurrentDomain.FriendlyName} exportall Actions text.txt\n" +
+         $"{AppDomain.CurrentDomain.FriendlyName} exportall Actions text.txt -locres Game.locres\n" +
          $"{AppDomain.CurrentDomain.FriendlyName} importall Actions text.txt\n";
 
         public static Args GetArgs(int Index, string[] args)
@@ -62,6 +69,11 @@ namespace UE4localizationsTool
                     case "-csv":
                         args1 |= Args.CSV;
                         break;
+
+                    case "-locres":
+                        args1 |= Args.LOCRES;
+                        break;
+
                     default:
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine("Invalid command: " + args[n]);
@@ -83,10 +95,11 @@ namespace UE4localizationsTool
                     case "-filter":
                     case "-nn":
                     case "-noname":
-                    case "-method2":
                     case "-m2":
+                    case "-method2":
                     case "-c":
                     case "-csv":
+                    case "-locres":
                         throw new Exception("Invalid number of arguments.\n\n" + commandlines);
                 }
             }

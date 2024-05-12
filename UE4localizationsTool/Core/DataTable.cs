@@ -1,16 +1,12 @@
 ﻿using Helper.MemoryList;
 
-namespace AssetParser
-{
-    public class DataTable
-    {
-        public DataTable(MemoryList memoryList, Uexp uexp, bool Modify = false)
-        {
+namespace AssetParser {
+    public class DataTable {
+        public DataTable(MemoryList memoryList, Uexp uexp, bool Modify = false) {
             memoryList.GetIntValue();//Null
             int TableCount = memoryList.GetIntValue();
 
-            for (int TableIndex = 0; TableIndex < TableCount; TableIndex++)
-            {
+            for (int TableIndex = 0; TableIndex < TableCount; TableIndex++) {
 
                 //for DRAGON.QUEST.XI.S.Echoes.of.an.Elusive.Age.Definitive.Edition
 
@@ -31,8 +27,7 @@ namespace AssetParser
                 }
 
 #else
-
-
+                ConsoleMode.Print("POS1: " + memoryList.GetPosition().ToString("X"));
                 memoryList.Skip(8); //no neeed
                 _ = new StructProperty(memoryList, uexp, uexp.UassetData.UseFromStruct, false, Modify);
 #endif
